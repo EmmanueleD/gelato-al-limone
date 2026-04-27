@@ -1,0 +1,214 @@
+---
+import ErrorBanner from './ErrorBanner.astro';
+---
+
+<section id="muro-confessioni" class="px-6 py-20 max-w-6xl mx-auto border-t-4 border-ink">
+  <div class="mb-12">
+    <h2 class="font-black text-4xl uppercase text-ink border-b-4 border-ink pb-4 inline-block">
+      Il Muro delle Confessioni
+    </h2>
+  </div>
+
+  <ErrorBanner id="confessioni-error" />
+
+  <form
+    data-confessioni-form
+    class="border-2 border-ink bg-secondary p-6 shadow-[6px_6px_0px_#000] flex flex-col gap-4 mb-10"
+  >
+    <label for="confessione-testo" class="font-mono text-sm font-bold text-white uppercase">
+      Confessa quale gusto preferivi PRIMA di scoprire il limone
+    </label>
+    <textarea
+      id="confessione-testo"
+      name="testo"
+      required
+      minlength="1"
+      maxlength="280"
+      rows="3"
+      placeholder="Confessa quale gusto preferivi PRIMA di scoprire il limone..."
+      class="border-2 border-ink bg-surface text-ink font-sans p-3 resize-none focus:outline-none focus:shadow-[4px_4px_0px_#000]"
+    ></textarea>
+    <div class="flex items-center justify-between">
+      <span data-confessione-counter class="font-mono text-xs text-white">0 / 280</span>
+      <button
+        type="submit"
+        data-confessioni-submit
+        class="bg-primary text-ink font-bold px-5 py-2 border-2 border-ink shadow-[4px_4px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        CONFESSA
+      </button>
+    </div>
+  </form>
+
+  <ul data-confessioni-list class="grid grid-cols-1 md:grid-cols-2 gap-4" aria-busy="true">
+  </ul>
+
+  <p data-confessioni-empty class="hidden font-sans text-base text-text italic">
+    Ancora nessuna confessione. Sii il primo!
+  </p>
+</section>
+
+<template id="confessione-tile-template">
+  <li class="border-2 border-ink bg-surface p-4 shadow-[4px_4px_0px_#000] flex flex-col gap-2">
+    <p data-tile-testo class="font-sans text-base text-ink leading-relaxed"></p>
+    <time data-tile-time class="font-mono text-xs text-text"></time>
+  </li>
+</template>
+
+<script>
+  import { getSupabaseClient } from '../lib/supabase';
+  import type { Confessione } from '../lib/supabase.types';
+
+  const MAX = 20;
+
+  const root = document.querySelector('#muro-confessioni')!;
+  const form = root.querySelector('[data-confessioni-form]') as HTMLFormElement;
+  const textarea = form.querySelector('textarea') as HTMLTextAreaElement;
+  const submitBtn = form.querySelector('[data-confessioni-submit]') as HTMLButtonElement;
+  const counter = form.querySelector('[data-confessione-counter]') as HTMLElement;
+  const list = root.querySelector('[data-confessioni-list]') as HTMLUListElement;
+  const emptyMsg = root.querySelector('[data-confessioni-empty]') as HTMLElement;
+  const tpl = document.querySelector<HTMLTemplateElement>('#confessione-tile-template')!;
+  const errorEl = document.querySelector('#confessioni-error') as HTMLElement;
+  const errorText = errorEl.querySelector('[data-error-text]') as HTMLElement;
+  const dismissBtn = errorEl.querySelector('[data-error-dismiss]') as HTMLButtonElement;
+
+  function showError(msg: string) {
+    errorText.textContent = msg;
+    errorEl.classList.remove('hidden');
+  }
+  function hideError() {
+    errorEl.classList.add('hidden');
+  }
+
+  dismissBtn.addEventListener('click', hideError);
+
+  function updateEmpty() {
+    if (list.children.length === 0) {
+      emptyMsg.classList.remove('hidden');
+    } else {
+      emptyMsg.classList.add('hidden');
+    }
+  }
+
+  function renderTile(
+    row: Confessione | { id: number | string; testo: string; created_at: string; _optimistic?: boolean },
+    position: 'prepend' | 'append' = 'prepend'
+  ) {
+    if (list.querySelector(`[data-id="${row.id}"]`)) return;
+
+    const node = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
+    node.setAttribute('data-id', String(row.id));
+
+    if ((row as { _optimistic?: boolean })._optimistic) {
+      node.classList.add('opacity-60');
+    }
+
+    node.querySelector('[data-tile-testo]')!.textContent = row.testo;
+    const timeEl = node.querySelector('[data-tile-time]') as HTMLTimeElement;
+    timeEl.dateTime = row.created_at;
+    timeEl.textContent = new Date(row.created_at).toLocaleString('it-IT');
+
+    if (position === 'prepend') {
+      list.prepend(node);
+    } else {
+      list.append(node);
+    }
+
+    while (list.children.length > MAX) {
+      list.lastElementChild?.remove();
+    }
+
+    updateEmpty();
+  }
+
+  textarea.addEventListener('input', () => {
+    counter.textContent = `${textarea.value.length} / 280`;
+  });
+
+  async function init() {
+    const supabase = getSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('confessioni')
+      .select('id, testo, created_at')
+      .order('created_at', { ascending: false })
+      .limit(MAX);
+
+    list.removeAttribute('aria-busy');
+
+    if (error) {
+      showError('Impossibile caricare le confessioni. Controlla la connessione.');
+      return;
+    }
+
+    (data ?? []).forEach(row => renderTile(row, 'append'));
+    updateEmpty();
+
+    const channel = supabase
+      .channel('confessioni-stream')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'confessioni' },
+        payload => {
+          renderTile(payload.new as Confessione, 'prepend');
+        }
+      )
+      .subscribe();
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+
+      const testo = textarea.value.trim();
+      if (testo.length < 1 || testo.length > 280) {
+        showError('La confessione deve essere tra 1 e 280 caratteri.');
+        return;
+      }
+
+      const tempId = `temp-${crypto.randomUUID()}`;
+      submitBtn.disabled = true;
+
+      renderTile(
+        { id: tempId, testo, created_at: new Date().toISOString(), _optimistic: true },
+        'prepend'
+      );
+
+      textarea.value = '';
+      counter.textContent = '0 / 280';
+
+      const { data: inserted, error: insertError } = await supabase
+        .from('confessioni')
+        .insert({ testo })
+        .select('id, testo, created_at')
+        .single();
+
+      submitBtn.disabled = false;
+
+      const tempTile = list.querySelector(`[data-id="${tempId}"]`);
+
+      if (insertError || !inserted) {
+        tempTile?.remove();
+        textarea.value = testo;
+        counter.textContent = `${testo.length} / 280`;
+        showError('Confessione non inviata. Riprova tra qualche secondo.');
+        updateEmpty();
+        return;
+      }
+
+      if (tempTile) {
+        tempTile.setAttribute('data-id', String(inserted.id));
+        tempTile.classList.remove('opacity-60');
+      }
+    });
+
+    window.addEventListener('pagehide', () => {
+      supabase.removeChannel(channel);
+    }, { once: true });
+  }
+
+  init().catch((err: unknown) => {
+    console.error('[MuroConfessioni]', err);
+    showError('Errore di connessione. Controlla la configurazione.');
+  });
+</script>

@@ -1,5 +1,5 @@
 {
-  "name": "proper-pegasi",
+  "name": "gelato-al-limone",
   "type": "module",
   "version": "0.0.1",
   "engines": {
@@ -12,6 +12,13 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^6.1.9"
+    "@supabase/supabase-js": "^2",
+    "@tailwindcss/vite": "^4.2.4",
+    "astro": "^6.1.9",
+    "tailwindcss": "^4.2.4"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.8",
+    "typescript": "^5.9.3"
   }
 }
