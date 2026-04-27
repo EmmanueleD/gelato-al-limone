@@ -1,0 +1,101 @@
+---
+import ErrorBanner from './ErrorBanner.astro';
+---
+
+<section id="voti" class="px-6 py-20 max-w-6xl mx-auto border-t-4 border-ink">
+  <div class="mb-12">
+    <h2 class="font-black text-4xl uppercase text-ink border-b-4 border-ink pb-4 inline-block">
+      Il Verdetto Popolare
+    </h2>
+  </div>
+
+  <ErrorBanner id="voti-error" />
+
+  <div class="border-2 border-ink bg-primary p-8 shadow-[6px_6px_0px_#000] flex flex-col gap-6 items-start">
+    <p class="font-mono font-bold text-2xl text-ink">
+      <span data-voti-count aria-busy="true" class="text-5xl font-black">…</span>
+      <span class="block text-base font-sans font-semibold mt-2">
+        persone hanno confermato la superiorità del limone
+      </span>
+    </p>
+    <button
+      type="button"
+      data-voti-button
+      class="bg-ink text-primary font-bold text-lg px-6 py-3 border-2 border-ink shadow-[6px_6px_0px_#432dd7] hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-[3px_3px_0px_#432dd7] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      ANCH'IO VOTO IL LIMONE!
+    </button>
+  </div>
+</section>
+
+<script>
+  import { getSupabaseClient } from '../lib/supabase';
+
+  const root = document.querySelector('#voti')!;
+  const countEl = root.querySelector('[data-voti-count]') as HTMLElement;
+  const btn = root.querySelector('[data-voti-button]') as HTMLButtonElement;
+  const errorEl = document.querySelector('#voti-error') as HTMLElement;
+  const errorText = errorEl.querySelector('[data-error-text]') as HTMLElement;
+  const dismissBtn = errorEl.querySelector('[data-error-dismiss]') as HTMLButtonElement;
+
+  let count = 0;
+
+  function showError(msg: string) {
+    errorText.textContent = msg;
+    errorEl.classList.remove('hidden');
+  }
+  function hideError() {
+    errorEl.classList.add('hidden');
+  }
+
+  dismissBtn.addEventListener('click', hideError);
+
+  async function init() {
+    const supabase = getSupabaseClient();
+
+    const { count: initialCount, error } = await supabase
+      .from('votes')
+      .select('*', { count: 'exact', head: true });
+
+    if (error) {
+      showError('Impossibile caricare i voti. Controlla la connessione.');
+      countEl.textContent = '?';
+      return;
+    }
+
+    count = initialCount ?? 0;
+    countEl.textContent = String(count);
+    countEl.removeAttribute('aria-busy');
+
+    const channel = supabase
+      .channel('votes-stream')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'votes' },
+        () => {
+          count++;
+          countEl.textContent = String(count);
+        }
+      )
+      .subscribe();
+
+    btn.addEventListener('click', async () => {
+      hideError();
+      btn.disabled = true;
+      const { error: insertError } = await supabase.from('votes').insert({});
+      btn.disabled = false;
+      if (insertError) {
+        showError('Voto non registrato. Riprova tra qualche secondo.');
+      }
+    });
+
+    window.addEventListener('pagehide', () => {
+      supabase.removeChannel(channel);
+    }, { once: true });
+  }
+
+  init().catch((err: unknown) => {
+    console.error('[VotiCounter]', err);
+    showError('Errore di connessione. Controlla la configurazione.');
+  });
+</script>

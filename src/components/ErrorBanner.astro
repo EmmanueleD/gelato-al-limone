@@ -1,0 +1,16 @@
+---
+interface Props {
+  id: string;
+  message?: string;
+}
+const { id, message = '' } = Astro.props;
+---
+
+<div
+  id={id}
+  role="alert"
+  class="hidden border-2 border-ink bg-surface text-ink font-mono text-sm font-bold px-4 py-2 shadow-[4px_4px_0px_#DC2626] mb-4"
+>
+  <span data-error-text>{message}</span>
+  <button type="button" data-error-dismiss class="ml-4 underline">chiudi</button>
+</div>

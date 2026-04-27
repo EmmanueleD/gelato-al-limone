@@ -1,17 +1,64 @@
 ---
-
+import BaseLayout from "../layouts/BaseLayout.astro";
+import HeroSection from "../components/HeroSection.astro";
+import FeatureCard from "../components/FeatureCard.astro";
+import VotiCounter from "../components/VotiCounter.astro";
+import MuroConfessioni from "../components/MuroConfessioni.astro";
+import Footer from "../components/Footer.astro";
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<BaseLayout title="Il Gelato al Limone — Il Migliore in Assoluto">
+  <HeroSection />
+
+  <section id="perche" class="px-6 py-20 max-w-6xl mx-auto">
+    <div class="mb-12">
+      <h2 class="font-black text-4xl uppercase text-ink border-b-4 border-ink pb-4 inline-block">
+        Perché il Limone?
+      </h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <FeatureCard
+        titolo="Fresco e Agrumato"
+        descrizione="Il gelato al limone pulisce il palato e rinfresca l'anima. Dopo ogni cucchiaio, il mondo sembra un posto migliore. Nessun altro gusto può permettersi questo livello di arroganza, e noi glielo concediamo volentieri."
+        emoji="🍋"
+        accent="primary"
+      />
+      <FeatureCard
+        titolo="Perfetto per l'Estate"
+        descrizione="Quando il sole batte impietoso e l'aria brucia, solo il gelato al limone ha il coraggio di affrontarlo. La sua acidità sfida il caldo con dignità. Il cioccolato si scioglie. Il limone trionfa."
+        emoji="☀️"
+        accent="secondary"
+      />
+      <FeatureCard
+        titolo="Un Classico Senza Tempo"
+        descrizione="Le mode passano. Il tiramisu va e viene. Ma il gelato al limone è lì, immobile, sicuro di sé, come un monumento alla semplicità. È esistito prima di noi e ci sopravviverà. Rispettatelo."
+        emoji="🏛️"
+        accent="primary"
+      />
+      <FeatureCard
+        titolo="Scientificamente Superiore"
+        descrizione="Il limone contiene vitamina C, antiossidanti e una quantità imprecisata di soddisfazione. Gli scienziati stanno ancora studiando perché ogni cucchiaio provochi un sorriso involontario. I risultati sono attesi a breve."
+        emoji="🔬"
+        accent="secondary"
+      />
+      <FeatureCard
+        titolo="L'Eleganza della Semplicità"
+        descrizione="Non ha bisogno di scaglie di cioccolato, variegature o topping assurdi per convincerti. Il gelato al limone si presenta al naturale, ti guarda negli occhi e dice: 'So già di essere il migliore.' E ha ragione."
+        emoji="👑"
+        accent="primary"
+      />
+      <FeatureCard
+        titolo="Amato da Tutti"
+        descrizione="Tua nonna lo ama. Tuo figlio lo ama. Il tuo medico, che non vuole che tu mangi troppi zuccheri, lo ama di nascosto. Il gelato al limone non divide: unisce. È la pace nel cono."
+        emoji="🤝"
+        accent="secondary"
+      />
+    </div>
+  </section>
+
+  <VotiCounter />
+  <MuroConfessioni />
+
+  <Footer />
+</BaseLayout>
