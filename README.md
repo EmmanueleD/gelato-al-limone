@@ -1,3 +1,23 @@
+# Il Gelato al Limone — Supabase Playground
+
+## Setup Supabase
+
+1. Crea un progetto su [supabase.com](https://supabase.com) → **New project**
+2. Vai su **SQL Editor** nel dashboard e incolla il contenuto di `supabase/migrations/0001_init.sql`, poi esegui
+3. Vai su **Settings → API** e copia:
+   - **Project URL** → `PUBLIC_SUPABASE_URL`
+   - **anon public** key → `PUBLIC_SUPABASE_ANON_KEY`
+4. Crea un file `.env.local` nella root del progetto:
+   ```
+   PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+   PUBLIC_SUPABASE_ANON_KEY=eyJ...
+   ```
+5. Verifica che **Realtime** sia abilitato: **Database → Replication** → le tabelle `votes` e `confessioni` devono essere nella pubblicazione `supabase_realtime` (il migration SQL lo fa automaticamente, ma controlla che il toggle Realtime sia ON nel progetto)
+
+> **Nota**: la `anon key` è pubblica per design (Supabase pattern). Le tabelle sono protette da Row Level Security — solo SELECT e INSERT anonimi sono permessi, niente UPDATE o DELETE.
+
+---
+
 # Astro Starter Kit: Minimal
 
 ```sh
