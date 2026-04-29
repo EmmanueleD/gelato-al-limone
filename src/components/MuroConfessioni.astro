@@ -23,13 +23,13 @@ import ErrorBanner from './ErrorBanner.astro';
       name="testo"
       required
       minlength="1"
-      maxlength="280"
+      maxlength="2500"
       rows="3"
       placeholder="Confessa quale gusto preferivi PRIMA di scoprire il limone..."
       class="border-2 border-ink bg-surface text-ink font-sans p-3 resize-none focus:outline-none focus:shadow-[4px_4px_0px_#000]"
     ></textarea>
     <div class="flex items-center justify-between">
-      <span data-confessione-counter class="font-mono text-xs text-white">0 / 280</span>
+      <span data-confessione-counter class="font-mono text-xs text-white">0 / 2500</span>
       <button
         type="submit"
         data-confessioni-submit
@@ -123,7 +123,7 @@ import ErrorBanner from './ErrorBanner.astro';
   }
 
   textarea.addEventListener('input', () => {
-    counter.textContent = `${textarea.value.length} / 280`;
+    counter.textContent = `${textarea.value.length} / 2500`;
   });
 
   async function init() {
