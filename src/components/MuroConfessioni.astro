@@ -122,9 +122,24 @@ import ErrorBanner from './ErrorBanner.astro';
     updateEmpty();
   }
 
-  textarea.addEventListener('input', () => {
-    counter.textContent = `${textarea.value.length} / 2500`;
-  });
+  const ELSA_PREFIX = 'elsa dice:';
+  const DEFAULT_MAX = 2500;
+
+  function isElsa() {
+    return textarea.value.toLowerCase().startsWith(ELSA_PREFIX);
+  }
+
+  function updateCounter() {
+    if (isElsa()) {
+      textarea.removeAttribute('maxlength');
+      counter.textContent = `${textarea.value.length} / ∞`;
+    } else {
+      textarea.setAttribute('maxlength', String(DEFAULT_MAX));
+      counter.textContent = `${textarea.value.length} / ${DEFAULT_MAX}`;
+    }
+  }
+
+  textarea.addEventListener('input', updateCounter);
 
   async function init() {
     const supabase = getSupabaseClient();
@@ -161,8 +176,9 @@ import ErrorBanner from './ErrorBanner.astro';
       hideError();
 
       const testo = textarea.value.trim();
-      if (testo.length < 1 || testo.length > 280) {
-        showError('La confessione deve essere tra 1 e 280 caratteri.');
+      const elsa = testo.toLowerCase().startsWith(ELSA_PREFIX);
+      if (testo.length < 1 || (!elsa && testo.length > DEFAULT_MAX)) {
+        showError(`La confessione deve essere tra 1 e ${DEFAULT_MAX} caratteri.`);
         return;
       }
 
@@ -175,7 +191,8 @@ import ErrorBanner from './ErrorBanner.astro';
       );
 
       textarea.value = '';
-      counter.textContent = '0 / 280';
+      counter.textContent = `0 / ${DEFAULT_MAX}`;
+      textarea.setAttribute('maxlength', String(DEFAULT_MAX));
 
       const { data: inserted, error: insertError } = await supabase
         .from('confessioni')
@@ -190,7 +207,7 @@ import ErrorBanner from './ErrorBanner.astro';
       if (insertError || !inserted) {
         tempTile?.remove();
         textarea.value = testo;
-        counter.textContent = `${testo.length} / 280`;
+        updateCounter();
         showError('Confessione non inviata. Riprova tra qualche secondo.');
         updateEmpty();
         return;
